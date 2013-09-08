@@ -1,0 +1,26 @@
+---
+title: N-Dimensional Cube
+description: Demo in Three.js showing the projection of a higher dimensional cube
+---
+
+extends ../../../layouts/main
+
+block append scripts
+  script(src="/js/jquery-2.0.3.js")
+  script(src="/js/three.js")
+  script(src="/js/numeric-1.2.6.js")
+  script(src="/js/underscore.js")
+  script(src="/js/TrackballControls.js")
+  script(src="cube.js")
+
+
+block content
+  #scene-container
+  input#updatecheck(type="checkbox")
+  | animate
+  input#dimensioninput(type="number", min=3, max=8) 
+  | dimension
+  #axis-container
+  button#refreshbutton refresh scene
+  :markdown
+    # An N-Dimensional cube projected down to three dimensions

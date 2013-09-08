@@ -1,0 +1,24 @@
+!!!
+!= getBlock('scripts').toHTML()
+
+html
+  head
+    title Phil Reinhold
+    link(rel="stylesheet", type="text/css", href="/main.css")
+    block scripts
+  body
+    h1 Phil Reinhold
+    #navbar
+        a.navitem(href="/about") about
+        a.navitem(href="/#projects") projects
+        a.navitem(href="/#notes") notes
+    #content
+      block content
+        #projects
+          h2 projects
+        #notes
+          h2 notes
+//        ul
+//          each note in notes
+//            li
+//              a(href=note.url) note.title

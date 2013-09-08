@@ -1,0 +1,9 @@
+extends ../layouts/main
+
+
+block content
+  ul
+    each note in getCollection('documents').toJSON()
+      if note.title
+        li
+          a(href=note.url)= note.title
