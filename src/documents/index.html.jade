@@ -1,8 +1,15 @@
 extends ../layouts/main
 
-
 block content
-  ul
+  #about
+    :markdown
+      # About
+
+      I'm Phil Reinhold. An applied physics Ph.D candidate at Yale working on
+      superconducting quantum computing under [Rob Schoelkopf](www.eng.yale.edu/rslab).
+      I am also an avid pythonista, and an aspiring [node](nodejs.org) hacker.
+      
+  ul#notes
     each note in getCollection('documents').toJSON()
       if note.title
         li
