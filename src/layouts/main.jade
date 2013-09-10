@@ -4,14 +4,28 @@
 html
   head
     title Phil Reinhold
-    link(rel="stylesheet", type="text/css", href="/main.css")
+    link(href="/main.css", rel="stylesheet", type="text/css")
+    link(href="/ir_black.css", rel="stylesheet", type="text/css")
+    link(href="http://fonts.googleapis.com/css?family=Oswald|Roboto:300", rel="stylesheet" type="text/css")
+
     block scripts
+      script(src="/js/jquery-2.0.3.js")
+
+    script(type='text/javascript').
+      $(document).ready(function() {
+        var height = $('#content').height();
+        console.log('hello world');
+        console.log(height);
+        if (height > $('#navbar').height()) {
+          $('#navbar').height(height);
+        }
+      });
   body
-    h1 Phil Reinhold
     #navbar
-      a.navitem(href="/#about") about
-      a.navitem(href="/#projects") projects
-      a.navitem(href="/#notes") notes
-      a.navitem(href="https://github.com/PhilReinhold") github
+      h1 Phil Reinhold
+      .navitem: a(href="/#about") about
+      .navitem: a(href="/#projects") projects
+      .navitem: a(href="/#notes") notes
+      .navitem: a(href="https://github.com/PhilReinhold") github
     #content
       block content

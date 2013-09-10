@@ -1,12 +1,17 @@
 ---
 title: N-Dimensional Cube
 description: Demo in Three.js showing the projection of a higher dimensional cube
+litcoffeeFile: cube.js.litcoffee
+referencesOthers: true
 ---
 
 extends ../../../layouts/main
 
+- f = 
+- if (!f.rendered) { f.render(); }
+- cubesrc = f.contentRendered
+
 block append scripts
-  script(src="/js/jquery-2.0.3.js")
   script(src="/js/three.js")
   script(src="/js/numeric-1.2.6.js")
   script(src="/js/underscore.js")
@@ -16,18 +21,13 @@ block append scripts
 
 block content
   #scene-container
-  input#updatecheck(type="checkbox")
+  input#updatecheck(type="checkbox", checked="True")
   | animate
-  input#dimensioninput(type="number", min=3, max=8) 
-  | dimension
+  //input#dimensioninput(type="number", min=3, max=8) 
+  //| dimension
   #axis-container
-  button#refreshbutton refresh scene
-//  - var docco, source, code, sections;
-//  - console.log(require);
-//  - docco = require('docco');
-//  - source = "cube.js.litcoffee";
-//  - code = fs.readFileSync(source, 'utf8');
-//  - sections = docco.parse(source, code);
-//  each section in sections
-//    .docs= section.docsText
-//    .code= section.codeText
+  //button#refreshbutton refresh scene
+  each section in getLitcoffeeData()
+    .docs!= section.docsHtml
+    pre
+      code!= section.codeHtml

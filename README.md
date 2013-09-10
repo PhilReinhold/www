@@ -1,4 +1,3 @@
-# Your [DocPad](http://docpad.org) Project
+# [philreinhold.com](philreinhold.com)
 
-## License
-Copyright &copy; 2013+ All rights reserved.
+Built using [DocPad](http://docpad.org)

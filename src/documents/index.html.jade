@@ -5,10 +5,25 @@ block content
     :markdown
       # About
 
-      I'm Phil Reinhold. An applied physics Ph.D candidate at Yale working on
-      superconducting quantum computing under [Rob Schoelkopf](www.eng.yale.edu/rslab).
-      I am also an avid pythonista, and an aspiring [node](nodejs.org) hacker.
+      Hi, I'm Phil.
+
+      I'm currently an applied physics Ph.D candidate at Yale working on
+      superconducting quantum computing under [Rob Schoelkopf](http://www.eng.yale.edu/rslab).
+      In addition to being a physics enthusiast, I'm also a zealous pythonista who is
+      getting pretty good at Qt.
+
+      I'd like to use this site to explore web development, create interactive math and
+      physics demos, and expose code via literate programming.
+
+  #projects
+    :markdown
+      # Projects
+
+      - [philreinhold.com](http://github.com/PhilReinhold/www): this site
+      - [H5Plot](http://github.com/PhilReinhold/H5Plot): A Python Live-Plotting Prosthesis
+          
       
+  h1 Notes
   ul#notes
     each note in getCollection('documents').toJSON()
       if note.title
