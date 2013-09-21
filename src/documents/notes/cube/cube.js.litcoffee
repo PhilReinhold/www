@@ -1,40 +1,38 @@
 # Hypercubes in CoffeeScript and WebGL
 
-Let's define some constants for WebGL's sake
-
-    WIDTH = 400
-    HEIGHT = 300
-    VIEW_ANGLE = 45
-    ASPECT = WIDTH / HEIGHT
-    NEAR = 0.1
-    FAR = 10000
-
 A cube is a simple thing. The most natural definition is recursive.  A line is
 two points, separated and connected.  A square is two lines, separated, and
 connected pointwise.  An N-cube is a pair of (N-1)-cubes, separated in the new
 N-th dimension, with edges strung together so that the k-th point on the first
 (N-1)-cube is connected to the k-th point of the second.
 
-    make_vertices = (n) ->
-      if n < 0
-        assert false
-      if n == 0
-        return [[]]
-      else
-        ret = []
-        for point in make_vertices(n-1)
-          ret.push point.concat(-1)
-          ret.push point.concat(1)
-        return ret
+    class n_cube
+      constructor: (@n) ->
+        if n == 0
+          @vertices = [[]]
+          @edges = []
+          @faces = []
+          return
 
-    make_edges = (n) ->
-      vertices = make_vertices(n)
-      lines = []
-      for i in [0..vertices.length-2]
-        for j in [i+1..vertices.length-1]
-          if (k for k in [0..n-1] when vertices[i][k] != vertices[j][k]).length == 1
-            lines.push [i, j]
-      return lines
+        sub_cube_1 = new n_cube(@n - 1)
+        sub_cube_2 = new n_cube(@n - 1)
+
+        sub_cube_1.extend_dimension(-1)
+        sub_cube_2.extend_dimension(1)
+
+        @vertices = sub_cube_1.vertices.concat sub_cube_2.vertices
+
+        # An edge is just an index into the vertices list
+        n = sub_cube_1.vertices.length
+        @edges = sub_cube_1.edges.concat ([i+n, j+n] for [i, j] in sub_cube_2.edges)
+        new_edges = _.zip([0..n-1], [n..2*n-1])
+        @edges = @edges.concat new_edges
+
+        @faces = sub_cube_1.faces.concat sub_cube_2.faces
+        @faces += ([new_edges[i],new_edges[i+1]] for i in [0..new_edges.length-2])
+
+      extend_dimension: (z) ->
+        v.push z for v in @vertices
 
 A hypercube is pretty boring if we can't move it around. Let's talk rotations.  In 1D we
 don't have any rotations. In 2D we have one (take your piece of paper and spin it around).
@@ -71,14 +69,6 @@ same if you take the taylor expansion \\[e^X = \sum\_{i=0}^\infty \frac{X^n}{n!}
 purposes we'll compute the matrix exponential only up to some finite number of powers of
 \\(X\\).
 
-Some math helpers
-
-    fact = _.memoize (n) ->
-      if n <= 1
-        return 1
-      else
-        return n * fact(n - 1)
-
     matrix_exp = (mat, n) ->
       ret = numeric.identity mat.length
       mat_acc = numeric.identity mat.length
@@ -87,6 +77,11 @@ Some math helpers
         ret = numeric.add(ret, numeric.mul((1.0 / fact(i)), mat_acc))
       return ret
 
+    fact = _.memoize (n) ->
+      if n <= 1
+        return 1
+      else
+        return n * fact(n - 1)
 
 Now finally, we're ready to give the full description of rotations. We start with
 \\(\binom{N}{2}\\) numbers corresponding to the weight assigned to each pair of basis vectors,
@@ -110,7 +105,7 @@ just the exponential of the angle times that matrix.
       return mat
 
     rotation_matrix = (n, components, angle) ->
-      return matrix_exp(angle * rotation_generator(n, components), 10)
+      return matrix_exp(numeric.mul(angle, rotation_generator(n, components)), 10)
 
 Much as in 3D, we can apply a 'hyper-perspective' by scaling points that are far away
 
@@ -120,77 +115,94 @@ Much as in 3D, we can apply a 'hyper-perspective' by scaling points that are far
         return pts
       return apply_perspective (numeric.div(p.slice(0, n-1), 3 - p[n-1]) for p in pts)
 
-Let's set up the main function
+Finally, let's set up WebGL using [three.js](http://threejs.org). The initial setup is
+pretty standard.
+
+    class hypercube_demo
+      constructor: ->
+        WIDTH = 400
+        HEIGHT = 300
+        VIEW_ANGLE = 45
+        ASPECT = WIDTH / HEIGHT
+        NEAR = 0.1
+        FAR = 10000
+
+        @renderer = new THREE.WebGLRenderer()
+        @renderer.setSize WIDTH, HEIGHT
+
+        @scene = new THREE.Scene()
+
+        @camera = new THREE.PerspectiveCamera VIEW_ANGLE, ASPECT, NEAR, FAR
+        @camera.position.z = 3
+        @scene.add @camera
+
+        light = new THREE.PointLight 0xFFFFFF
+        light.position.set 10, 50, 130
+        @scene.add light
+        $('#scene-container').append @renderer.domElement
+
+        @set_dimension(4)
+
+Since I want to use [numeric.js](http://numericjs.com) to handle the matrix math,
+I need to keep synchronized copies of the cube vertex positions. One as a standard JS
+array (for numeric) which has the full dimension, and another as a three.js vector with
+three components for rendering.
+      
+      set_dimension: (n) ->
+        @cube = new n_cube n
+        @n_rotations = n * (n-1) / 2
+        @display_vertices =
+          (new THREE.Vector3(v) for v in (apply_perspective @cube.vertices))
+        @display_edges =
+          (new simple_line (@display_vertices[i] for i in e) for e in @cube.edges)
+
+        @scene.remove e for e in @scene.children # Clear the scene
+        @scene.add e for e in @display_edges
+        console.log @scene
+        console.log @display_edges
+        console.log @cube.edges
+
+The interface provides a way of selecting which of the \\(\binom{N}{2}\\) axes to rotate
+along. When the dimension, changes, the number of axes changes too.
+
+        $('#currentdim').text(n.toString())
+        $('#axis-container').empty()
+        for i in [1..@n_rotations]
+          $('#axis-container').append("<input type=checkbox id=axis#{i}>#{i}</input>")
+          $("#axis#{i}").click(=> @update_rotator())
+
+        @update_rotator()
+
+      update_rotator: ->
+        console.log @
+        components =
+          ((if axis.checked then 1 else 0) for axis in $('#axis-container').children().toArray())
+        @rotator = rotation_matrix(@cube.n, components, .01)
+        console.log @rotator
+
+      rotate: ->
+        @cube.vertices = (numeric.dot(@rotator, v) for v in @cube.vertices)
+
+        for [[x, y, z], dv] in _.zip (apply_perspective @cube.vertices), @display_vertices
+          dv.set(x, y, z)
+
+        for line in @display_edges
+          line.geometry.verticesNeedUpdate = true
+
+
+    simple_line = (points) ->
+      console.log(points)
+      geometry = new THREE.Geometry()
+      geometry.vertices.push(p) for p in points
+      return new THREE.Line geometry
 
     $(document).ready ->
-      renderer = new THREE.WebGLRenderer()
-      renderer.setSize WIDTH, HEIGHT
+      demo = new hypercube_demo
 
-      scene = new THREE.Scene()
-
-      camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR)
-      camera.position.z = 1
-      scene.add camera
-
-      radius = .15
-      segments = 16
-      rings = 16
-      ball_geom = new THREE.SphereGeometry radius, segments, rings
-      material = new THREE.MeshLambertMaterial
-          color: 0xCC0000
-
-      dim = 5
-      n_rotations = dim * (dim - 1) / 2
-      vertices = make_vertices(dim)
-      balls = []
-      for [x, y, z, others...] in vertices
-        ball = new THREE.Mesh ball_geom, material
-        ball.position.set x, y, z
-        balls.push ball
-
-      edges = make_edges(dim)
-      lines = []
-      for [i, j] in edges
-        line_geom = new THREE.Geometry()
-        line_geom.vertices.push(balls[i].position)
-        line_geom.vertices.push(balls[j].position)
-        line = new THREE.Line line_geom
-        lines.push line
-        scene.add line
-
-      light = new THREE.PointLight 0xFFFFFF
-      light.position.x = 10
-      light.position.y = 50
-      light.position.z = 130
-      scene.add(light)
-      $('#scene-container').append renderer.domElement
-
-      generator = rotation_generator(dim, (.01 for i in [1..n_rotations]))
-      rotator = matrix_exp(generator, 10)
-
-      console.log(generator)
-      console.log(rotator)
-
-      console.log $('#diminput')
-      $('#diminput').change () ->
-        console.log('here')
-        n_dim = parseInt $('#diminput')[0].value
-        n_axes = n_dim * (n_dim - 1) / 2
-        $('#axis-container').empty()
-        for i in [1..n_axes]
-          $('#axis-container').append('<input type="number" value="1.0"/>')
-
-      render = () ->
-        renderer.render(scene, camera)
-
-      animate = () ->
+      animate = ->
         requestAnimationFrame animate
         if $('#updatecheck')[0].checked
-          vertices = (numeric.dot(rotator, v) for v in vertices)
-          for [ball, [x, y, z, others...]] in _.zip(balls, apply_perspective vertices)
-            ball.position.set(x, y, z)
-          for line in lines
-            line.geometry.verticesNeedUpdate = true
-        render()
-      
+          demo.rotate()
+        demo.renderer.render(demo.scene, demo.camera)
+
       animate()

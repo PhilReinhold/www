@@ -24,8 +24,11 @@ block content
   #scene-container
   input#updatecheck(type="checkbox", checked="True")
   | animate
-  //input#dimensioninput(type="number", min=3, max=8) 
-  //| dimension
+  #dimensionarea
+    | dimension
+    span#currentdim
+    button#dimup up
+    button#dimdown down
   #axis-container
   //button#refreshbutton refresh scene
   each section in getLitcoffeeData()
